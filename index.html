@@ -13,6 +13,13 @@ header{background:linear-gradient(135deg,var(--pri),#7c3aed);color:#fff;padding:
 .logo{background:#fff;color:var(--pri);font-weight:800;font-size:22px;border-radius:12px;padding:4px 12px}
 header h1{font-size:20px;flex:0 0 auto}
 .tabs{display:flex;gap:6px;margin-left:16px}
+.clsCard{max-width:620px;margin:10px auto 0;background:var(--card);border-radius:24px;padding:28px 24px;text-align:center;box-shadow:0 4px 18px #4f46e522;border-top:8px solid var(--pri)}
+.clsCard .ic{font-size:60px}.clsCard h2{font-size:28px;margin:4px 0}
+.clsCard .big{font-size:60px;font-weight:800;color:var(--pri);line-height:1.1}
+.clsCard .sub{margin:8px 0 14px;color:var(--mut);font-size:14px}
+.clsAv{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:230px;overflow:auto;padding:4px}
+.clsAv .av,.clsAv .av.pa{width:42px;height:42px;margin:0;font-size:22px;border-width:2px;flex:0 0 auto}
+body.clsPopup .clsCard{cursor:pointer}body.clsPopup .clsCard:hover{box-shadow:0 8px 24px #4f46e544}
 .tab{background:#ffffff26;border:0;color:#fff;padding:8px 18px;border-radius:999px;font-size:15px;cursor:pointer}
 .tab.on{background:#fff;color:var(--pri);font-weight:700}
 .sp{flex:1}
@@ -294,6 +301,19 @@ textarea{width:100%;height:340px}
 .seatGrid{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(64px,1fr));gap:12px;width:min(100%,calc(var(--cols,4) * 180px));margin:0 auto;background:var(--card);border-radius:18px;padding:16px;box-shadow:0 1px 6px #0001;overflow-x:auto}
 .seat{position:relative;min-height:104px;border:2px solid var(--line);border-radius:14px;background:#fafaff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 4px;cursor:pointer;transition:.15s;user-select:none}
 .seat:hover{border-color:var(--pri2);box-shadow:0 4px 12px #4f46e522}
+/* 座位表：平时只读（加分+显示分数），点「编辑座位」才能调整 */
+#pgSeat:not(.editing) .seatBar,#pgSeat:not(.editing) .seatPool,#pgSeat:not(.editing) .seatH,#pgSeat:not(.editing) .seatx{display:none!important}
+#pgSeat.editing .seatH2{display:none}
+.seatH2{color:var(--mut);font-size:13px;text-align:center;margin-top:14px}
+#pgSeat:not(.editing) .seat[data-sid]{cursor:pointer}
+#pgSeat:not(.editing) .seat[data-sid]:hover{border-color:var(--pri2);background:#f3f4ff}
+#pgSeat.editing .seat[data-sid]{cursor:grab}
+.seat .sc2{font-size:17px;font-weight:800;color:var(--pri);line-height:1.1}
+.seat .sc2.neg{color:var(--bad)}
+#seatEditBtn.on{background:#fff;color:var(--pri);font-weight:700}
+.seat{min-height:122px}
+@media print{.seat .sc2,.seatH2{display:none!important}}
+
 .seat .av{width:46px;height:46px;font-size:19px;margin:0 0 2px}
 .seat .av.pa{font-size:24px;border-width:2px}
 .seat .nm{font-size:14px;font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
@@ -705,8 +725,9 @@ textarea{width:100%;height:340px}
   <span class="logo">5L</span>
   <h1>5L 积分表</h1>
   <div class="tabs">
-    <button class="tab on" data-v="stu">学生</button>
-    <button class="tab" data-v="grp">小组</button>
+    <button class="tab on" data-v="stu">个人</button>
+    <button class="tab" data-v="grp">全组</button>
+    <button class="tab" data-v="cls">全班</button>
   </div>
   <div class="sp"></div>
   <button class="hbtn on" id="bMode" title="切换：侧栏选择模式 / 弹窗模式">侧栏模式</button>
@@ -719,6 +740,11 @@ textarea{width:100%;height:340px}
   <section id="vStu">
     <div class="stat"><div>5L 学生人数<b id="sN">24</b></div><div>全班总分<b id="sT">0</b></div></div>
     <div class="grid" id="stuGrid"></div>
+  </section>
+  <section id="vCls" class="hide">
+    <div class="stat"><div>5L 学生人数<b id="cN">24</b></div><div>全班总分<b id="cT">0</b></div><div>人均分<b id="cA">0</b></div></div>
+    <div class="clsCard" id="clsCard"><div class="ic">🏫</div><h2>5L 全班</h2><div class="big" id="cBig">0</div><div class="sub" id="cHint"></div>
+      <div class="clsAv" id="clsAv"></div></div>
   </section>
   <section id="vGrp" class="hide">
     <div class="stat"><div>5L 小组数<b>6</b></div><div>每组最多<b>10 人</b></div><div>未分组学生<b id="sU">0</b></div></div>
@@ -815,6 +841,7 @@ textarea{width:100%;height:340px}
   <span class="logo">5L</span>
   <h1>座位表</h1>
   <div class="sp"></div>
+  <button class="hbtn" id="seatEditBtn">✏ 编辑座位</button>
   <button class="hbtn" id="seatPrint">🖨 打印座位表</button>
 </header>
 <main>
@@ -829,6 +856,7 @@ textarea{width:100%;height:340px}
   <div class="seatStat" id="seatStat"></div>
   <div class="seatGrid" id="seatGrid" style="--cols:4"></div>
   <div class="pool seatPool" id="seatPool"><h3>未安排学生 <small id="seatPoolN"></small></h3><div class="zl" id="seatPoolList"></div></div>
+  <div class="seatH2">点学生的座位，就能给他加分 / 扣分；要调整座位，点右上角「✏ 编辑座位」。</div>
   <div class="seatH">点一下学生，再点座位就能安排；也可以直接拖动。<br>点已坐好的学生、再点另一个座位 = 交换；把学生拖到下面「未安排」或点座位右上角的 × = 撤掉座位。<br>点学生头像 = 快速加分 / 扣分：中间填分数，左边减、右边加，点完圆圈自动收起。</div>
 </main>
 </div>
@@ -1017,7 +1045,10 @@ const fmt=n=>n>0?'+'+n:''+n;
 
 /* ---------- 渲染 ---------- */
 function render(){
-  $('#sT').textContent=S.students.reduce((a,s)=>a+s.score,0);
+  const tot=S.students.reduce((a,s)=>a+s.score,0);
+  $('#sT').textContent=tot;$('#cT').textContent=tot;$('#cBig').textContent=tot;$('#cN').textContent=S.students.length;
+  $('#cA').textContent=S.students.length?(Math.round(tot/S.students.length*10)/10):0;
+  $('#clsAv').innerHTML=S.students.map(s=>avatarHtml(s)).join('');
   $('#sU').textContent=S.students.filter(s=>!grpOf(s.id)).length;
   $('#stuGrid').innerHTML=S.students.map(s=>{
     const g=grpOf(s.id);
@@ -1039,14 +1070,17 @@ function render(){
   renderSide();renderWheelPick();
 }
 function renderSide(){
-  const on=mode==='side'&&view==='stu';
+  const on=mode==='side'&&(view==='stu'||view==='cls');
+  document.body.classList.toggle('clsPopup',mode!=='side');
+  $('#sAll').parentNode.classList.toggle('hide',view==='cls');
   $('#side').classList.toggle('hide',!on);
   $('#bMode').textContent=mode==='side'?'侧栏模式':'弹窗模式';
   $('#bMode').classList.toggle('on',mode==='side');
   if(!on)return;
-  const ids=S.students.filter(s=>sel.has(s.id));
-  $('#selInfo').innerHTML=ids.length?`已选 <b>${ids.length}</b> 人${ids.length===NS?'（全班）':''}<small>${ids.length===NS?'':ids.map(s=>esc(s.name)).join('、')}</small>`:'<span style="color:var(--mut)">点学生卡片选择；点学生头像可快速加分 / 扣分</span>';
-  $('#sAll').textContent=sel.size===NS?'取消全班':'全班';
+  const ids=view==='cls'?S.students.slice():S.students.filter(s=>sel.has(s.id));
+  if(view==='cls'){$('#selInfo').innerHTML=`加分对象：<b>全班 ${NS} 人</b><small>每位同学都会加/扣相同的分数</small>`;$('#cHint').textContent=mode==='side'?'在左边面板点规则，全班每个人一起加分或扣分':'点这张卡片，给全班每个人一起加分或扣分'}
+  else $('#selInfo').innerHTML=ids.length?`已选 <b>${ids.length}</b> 人${ids.length===NS?'（全班）':''}<small>${ids.length===NS?'':ids.map(s=>esc(s.name)).join('、')}</small>`:'<span style="color:var(--mut)">点学生卡片选择；点学生头像可快速加分 / 扣分</span>';
+  $('#sAll').textContent=sel.size===NS?'取消全选':'全选';
   $('#sEdit').textContent=sEdit?'完成':'管理规则';
   const rb=r=>`<div class="rule ${r.pts>=0?'pos':'neg'}" data-srule="${r.id}"><span class="x" ${sEdit?'style="display:block"':''} data-del="${r.id}">×</span><div class="p">${fmt(r.pts)}</div><div>${esc(r.name)}</div></div>`;
   $('#sPos').innerHTML=S.rules.filter(r=>r.pts>=0).map(rb).join('')||'<span class="empty">无</span>';
@@ -1063,8 +1097,8 @@ function renderRules(){
 }
 function openAward(type,id){
   award={type,id};
-  const o=type==='stu'?stu(id):S.groups.find(g=>g.id===id);
-  $('#aTitle').textContent=(type==='stu'?'给 ':'给小组 ')+o.name+' 加/扣分';
+  const o=type==='stu'?stu(id):type==='cls'?{name:'5L 全班'}:S.groups.find(g=>g.id===id);
+  $('#aTitle').textContent=type==='cls'?'给全班每个人加/扣分':(type==='stu'?'给 ':'给小组 ')+o.name+' 加/扣分';
   editRules=false;$('#bEditRules').textContent='管理规则';
   renderRules();$('#cReason').value='';$('#cPts').value=1;
   $('#mAward').classList.add('on');
@@ -1085,9 +1119,10 @@ function applyTo(targets,pts,reason){
   return true;
 }
 function apply(pts,reason){
-  if(applyTo([award],pts,reason))$('#mAward').classList.remove('on');
+  const tg=award.type==='cls'?S.students.map(s=>({type:'stu',id:s.id})):[award];
+  if(applyTo(tg,pts,reason))$('#mAward').classList.remove('on');
 }
-function sideApply(pts,reason){applyTo([...sel].map(id=>({type:'stu',id})),pts,reason)}
+function sideApply(pts,reason){applyTo(view==='cls'?S.students.map(s=>({type:'stu',id:s.id})):[...sel].map(id=>({type:'stu',id})),pts,reason)}
 function undo(){
   const first=S.log[0];if(!first){toast('没有可撤销的记录');return}
   if(first.nu){toast('宠物相关的记录不能撤销');return}
@@ -1129,6 +1164,7 @@ function openGroup(id){
 document.addEventListener('click',e=>{
   const t=e.target;
   if(t.matches('[data-close]')||t.classList.contains('mask'))document.querySelectorAll('.mask').forEach(m=>m.classList.remove('on'));
+  if(t.closest('#clsCard')&&mode!=='side'){openAward('cls',0);return}
   const stuEl=t.closest('.stu');if(stuEl){const id=+stuEl.dataset.id;
     if(mode==='side'){sel.has(id)?sel.delete(id):sel.add(id);render()}else openAward('stu',id)}
   const sr=t.closest('[data-srule]');if(sr&&!sEdit&&!t.dataset.del){const r=S.rules.find(r=>r.id===+sr.dataset.srule);sideApply(r.pts,r.name)}
@@ -1142,7 +1178,7 @@ document.addEventListener('click',e=>{
 });
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   view=b.dataset.v;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
-  $('#vStu').classList.toggle('hide',view!=='stu');$('#vGrp').classList.toggle('hide',view!=='grp');renderSide();});
+  $('#vStu').classList.toggle('hide',view!=='stu');$('#vGrp').classList.toggle('hide',view!=='grp');$('#vCls').classList.toggle('hide',view!=='cls');render();});
 $('#bMode').onclick=()=>{mode=mode==='side'?'popup':'side';localStorage.setItem('class5L-mode',mode);render();toast(mode==='side'?'侧栏模式：点学生选择，右边加分':'弹窗模式：点学生直接弹出加分窗口')};
 $('#sAll').onclick=()=>{if(sel.size===NS)sel.clear();else S.students.forEach(s=>sel.add(s.id));render()};
 $('#sClear').onclick=()=>{sel.clear();render()};
@@ -1751,7 +1787,8 @@ document.addEventListener('keydown',e=>{
 
 /* ---------- 座位表 ---------- */
 const SEAT_MAXR=10, SEAT_MAXC=8;
-var seatPick=null, seatDrag=null;
+var seatPick=null, seatDrag=null, seatEdit=false;
+function seatSetEdit(v){seatEdit=!!v;seatPick=null;closeQuick();$('#pgSeat').classList.toggle('editing',seatEdit);const b=$('#seatEditBtn');b.textContent=seatEdit?'✔ 完成编辑':'✏ 编辑座位';b.classList.toggle('on',seatEdit);renderSeat()}
 function seatKey(r,c){return r+'-'+c}
 function seatOfId(id){for(const k in S.seat.map){if(S.seat.map[k]===id){const p=k.split('-');return [+p[0],+p[1]]}}return null}
 function seatClean(){
@@ -1780,8 +1817,8 @@ function renderSeat(){
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
     const id=S.seat.map[seatKey(r,c)],s=id?stu(id):null,g=s?grpOf(s.id):null;
     const on=seatPick&&seatPick.from==='seat'&&seatPick.r===r&&seatPick.c===c;
-    h+=`<div class="seat${s?'':' no'}${on?' pick':''}" data-r="${r}" data-c="${c}"${s?` data-sid="${s.id}" draggable="true"`:''} title="第${r+1}排 第${c+1}列${s?' · '+esc(s.name):'（空位）'}">`+
-      (s?`${g?`<i class="gdot" style="background:${COLORS[g.id-1]}" title="${esc(g.name)}"></i>`:''}<button class="seatx" data-unseat="${s.id}" title="移出座位">×</button><span class="sidn">${s.id}</span>${avatarHtml(s)}<div class="nm">${esc(s.name)}</div>`:`<div class="sn">空位</div>`)+
+    h+=`<div class="seat${s?'':' no'}${on?' pick':''}" data-r="${r}" data-c="${c}"${s?` data-sid="${s.id}"${seatEdit?' draggable="true"':''}`:''} title="第${r+1}排 第${c+1}列${s?' · '+esc(s.name):'（空位）'}">`+
+      (s?`${g?`<i class="gdot" style="background:${COLORS[g.id-1]}" title="${esc(g.name)}"></i>`:''}<button class="seatx" data-unseat="${s.id}" title="移出座位">×</button><span class="sidn">${s.id}</span>${avatarHtml(s)}<div class="nm">${esc(s.name)}</div><div class="sc2${s.score<0?' neg':''}">${s.score}</div>`:`<div class="sn">空位</div>`)+
       `</div>`;
   }
   grid.innerHTML=h;
@@ -1827,6 +1864,7 @@ function seatUnassign(id){
 }
 document.addEventListener('click',e=>{
   if(!e.target.closest('#pgSeat'))return;
+  if(!seatEdit)return;
   const un=e.target.closest('[data-unseat]');
   if(un){e.stopPropagation();seatUnassign(+un.dataset.unseat);seatPick=null;renderSeat();return}
   const cell=e.target.closest('.seat');
@@ -1850,6 +1888,7 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('button')&&seatPick){seatPick=null;renderSeat()}
 });
 $('#seatGrid').addEventListener('dragstart',e=>{
+  if(!seatEdit){e.preventDefault();return}
   const cell=e.target.closest('.seat[data-sid]');if(!cell)return;
   seatDrag={from:'seat',sid:+cell.dataset.sid,r:+cell.dataset.r,c:+cell.dataset.c};
   e.dataTransfer.setData('text/plain',String(seatDrag.sid));e.dataTransfer.effectAllowed='move';
@@ -1876,6 +1915,7 @@ $('#seatGrid').addEventListener('drop',e=>{
   renderSeat();
 });
 $('#seatPool').addEventListener('dragstart',e=>{
+  if(!seatEdit){e.preventDefault();return}
   const ch=e.target.closest('[data-sid]');if(!ch)return;
   seatDrag={from:'pool',sid:+ch.dataset.sid};
   e.dataTransfer.setData('text/plain',String(seatDrag.sid));e.dataTransfer.effectAllowed='move';
@@ -1961,11 +2001,12 @@ function qApply(sign){
   renderSeat();
 }
 $('#seatGrid').addEventListener('click',e=>{
-  const av=e.target.closest('.av');if(!av)return;
-  const cell=av.closest('.seat[data-sid]');if(!cell)return;
+  if(seatEdit)return;
+  const cell=e.target.closest('.seat[data-sid]');if(!cell)return;
   e.stopPropagation();
-  openQuick(+cell.dataset.sid,av);
+  openQuick(+cell.dataset.sid,cell.querySelector('.av')||cell);
 });
+$('#seatEditBtn').onclick=()=>{seatSetEdit(!seatEdit);toast(seatEdit?'编辑模式：可以拖动 / 点选调整座位，改完点「完成编辑」':'已锁定座位，点座位可以加分')};
 $('#stuGrid').addEventListener('click',e=>{
   const av=e.target.closest('.av');if(!av)return;
   const card=av.closest('.stu');if(!card)return;
@@ -2464,6 +2505,7 @@ function go(p){
   if(p!=='push')psLeave();
   if(p!=='boss')Boss.hide();
   if(p!=='seat')seatPick=null;
+  if(p==='seat'&&seatEdit)seatSetEdit(false);
   document.querySelectorAll('.mask').forEach(m=>m.classList.remove('on'));
   window.scrollTo(0,0);
   if(p==='wheel'){drawWheel();renderWheelPick()}
